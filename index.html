@@ -131,8 +131,8 @@ $("#importProjectBtn").onclick=()=>$("#importProjectInput").click();
 function htmlWithBase(source,base){
  if(!base)return source;
  const safeBase=String(base).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"%3C");
- if(/<base\\b/i.test(source))return source.replace(/<base\\b[^>]*>/i,`<base href="${safeBase}">`);
- if(/<head\\b[^>]*>/i.test(source))return source.replace(/<head\\b[^>]*>/i,m=>m+`<base href="${safeBase}">`);
+ if(/<base\b/i.test(source))return source.replace(/<base\\b[^>]*>/i,`<base href="${safeBase}">`);
+ if(/<head\b[^>]*>/i.test(source))return source.replace(/<head\b[^>]*>/i,m=>m+`<base href="${safeBase}">`);
  return `<base href="${safeBase}">`+source;
 }
 function importHTMLProject(html,fileName,baseUrl){
@@ -140,7 +140,7 @@ function importHTMLProject(html,fileName,baseUrl){
  const canonical=doc.querySelector("link[rel=canonical]")?.href||doc.querySelector('meta[property="og:url"]')?.content||"";
  let inferredBase=baseUrl||"";
  if(!inferredBase&&canonical){try{const u=new URL(canonical);u.pathname=u.pathname.slice(0,u.pathname.lastIndexOf("/")+1);u.search="";u.hash="";inferredBase=u.href}catch(e){}}
- return {title:(doc.title||fileName.replace(/\\.(html?|HTML?)$/,"")||"پروژه HTML").slice(0,120),pages:[{id:"home",name:"HTML واردشده",blocks:[{id:uid(),type:"htmlPreview",htmlSource:html,htmlBase:inferredBase}]}]};
+ return {title:(doc.title||fileName.replace(/\.(html?|HTML?)$/,"")||"پروژه HTML").slice(0,120),pages:[{id:"home",name:"HTML واردشده",blocks:[{id:uid(),type:"htmlPreview",htmlSource:html,htmlBase:inferredBase}]}]};
  /* Legacy conversion retained below for reference; faithful HTML preview is the default. */
  const blocks=[];
  const colorFrom=(el,key,fallback)=>{const v=el.style?.[key];return v&&/^#[0-9a-f]{3,8}$/i.test(v.trim())?v.trim():fallback};
@@ -169,7 +169,7 @@ $("#importProjectInput").addEventListener("change",async e=>{const file=e.target
  const textContent=await file.text();
  let imported;
  if(/\.html?$/i.test(file.name)){
-  const suggestedBase=prompt("برای حفظ CSS، تصاویر و فایل‌های نسبی، آدرس پوشهٔ اصلی سایت را وارد کن (اختیاری):\\nمثال: https://nikanazimi1393-design.github.io/rozume/\\nاگر نمی‌دانی، خالی بگذار.", "");
+  const suggestedBase=prompt("برای حفظ CSS، تصاویر و فایل‌های نسبی، آدرس پوشهٔ اصلی سایت را وارد کن (اختیاری):\nمثال: https://nikanazimi1393-design.github.io/rozume/\nاگر نمی‌دانی، خالی بگذار.", "");
   if(suggestedBase===null)return;
   if(suggestedBase.trim()){try{const u=new URL(suggestedBase.trim());if(!["http:","https:"].includes(u.protocol))throw 0}catch{throw new Error("آدرس پایه باید با http:// یا https:// شروع شود.")}}
   imported=importHTMLProject(textContent,file.name,suggestedBase.trim());

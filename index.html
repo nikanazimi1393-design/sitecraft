@@ -131,7 +131,7 @@ $("#importProjectBtn").onclick=()=>$("#importProjectInput").click();
 function htmlWithBase(source,base){
  if(!base)return source;
  const safeBase=String(base).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"%3C");
- if(/<base\b/i.test(source))return source.replace(/<base\\b[^>]*>/i,`<base href="${safeBase}">`);
+ if(/<base\b/i.test(source))return source.replace(/<base\b[^>]*>/i,`<base href="${safeBase}">`);
  if(/<head\b[^>]*>/i.test(source))return source.replace(/<head\b[^>]*>/i,m=>m+`<base href="${safeBase}">`);
  return `<base href="${safeBase}">`+source;
 }

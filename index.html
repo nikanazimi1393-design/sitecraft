@@ -138,13 +138,13 @@ function importHTMLProject(html,fileName){
  }
  Array.from(doc.body.children).forEach(walk);
  if(!blocks.length)throw new Error("از این فایل HTML بخش قابل‌واردکردنی پیدا نشد. مطمئن شو فایل شامل عنوان، متن، لینک یا تصویر است.");
- return {title:(doc.title||fileName.replace(/\\.(html?|HTML?)$/,"")||"پروژه واردشده").slice(0,120),pages:[{id:"home",name:"صفحه اصلی",blocks:blocks.slice(0,2000)}]};
+ return {title:(doc.title||fileName.replace(/\.(html?|HTML?)$/,"")||"پروژه واردشده").slice(0,120),pages:[{id:"home",name:"صفحه اصلی",blocks:blocks.slice(0,2000)}]};
 }
 $("#importProjectInput").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;try{
  if(file.size>5*1024*1024)throw new Error("حجم فایل بیشتر از ۵ مگابایت است.");
  const textContent=await file.text();
  let imported;
- if(/\\.html?$/i.test(file.name)){
+ if(/\.html?$/i.test(file.name)){
   imported=importHTMLProject(textContent,file.name);
  }else{
   try{imported=JSON.parse(textContent)}catch{throw new Error("این فایل JSON معتبر نیست. برای واردکردن HTML، فایل با پسوند .html یا .htm انتخاب کن.")}

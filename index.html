@@ -178,7 +178,7 @@ $("#importProjectInput").addEventListener("change",async e=>{const file=e.target
   if(!validImportedProject(imported))throw new Error("ساختار فایل پروژه معتبر نیست.");
  }
  if(!confirm("پروژه فعلی با پروژه واردشده جایگزین شود؟ پیشنهاد می‌شود ابتدا از پروژه فعلی خروجی بگیری."))return;
- project=imported;currentPage=project.pages[0].id;selectedId=null;preview=false;$("#previewBtn").textContent="پیش‌نمایش سایت";localStorage.setItem("nikaSiteBuilderProject",JSON.stringify(project));renderAll();toast("پروژه با موفقیت وارد شد")
+ project=imported;currentPage=project.pages[0].id;selectedId=(project.pages[0].blocks.length===1&&project.pages[0].blocks[0].type==="htmlPreview")?project.pages[0].blocks[0].id:null;preview=false;$("#previewBtn").textContent="پیش‌نمایش سایت";localStorage.setItem("nikaSiteBuilderProject",JSON.stringify(project));renderAll();toast("پروژه با موفقیت وارد شد")
  }catch(err){alert("وارد کردن پروژه ناموفق بود: "+(err.message||"فایل قابل خواندن نیست."))}finally{e.target.value=""}});
 function generatedHTML(){
  const pageFiles=project.pages.map(p=>{

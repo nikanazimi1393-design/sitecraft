@@ -12,7 +12,7 @@
 <body>
 <header class="topbar">
  <div class="brand"><div class="logo">N</div><div>سایت‌ساز نیکا<div class="sub">طراحی سایت بدون نوشتن کد</div></div></div>
- <div class="actions"><button class="ghost" id="previewBtn">پیش‌نمایش سایت</button><button id="saveBtn">ذخیره پروژه</button><button id="exportProjectBtn">خروجی گرفتن از پروژه</button><button id="importProjectBtn">وارد کردن پروژه</button><input id="importProjectInput" type="file" accept=".json,application/json" hidden><button class="primary" id="finishBtn">پایان کار و دریافت HTML</button></div>
+ <div class="actions"><button class="ghost" id="previewBtn">پیش‌نمایش سایت</button><button id="saveBtn">ذخیره پروژه</button><button id="exportProjectBtn">خروجی گرفتن از پروژه</button><button id="importProjectBtn">وارد کردن پروژه</button><input id="importProjectInput" type="file" accept=".json,.html,.htm,application/json,text/html" hidden><button class="primary" id="finishBtn">پایان کار و دریافت HTML</button></div>
 </header>
 <div class="layout">
  <aside class="sidebar">
@@ -116,7 +116,43 @@ function validImportedProject(p){
 function loadProject(){try{const x=localStorage.getItem("nikaSiteBuilderProject");if(x){const p=JSON.parse(x);if(validImportedProject(p))project=p}}catch(e){}}
 $("#exportProjectBtn").onclick=()=>{const blob=new Blob([JSON.stringify(project,null,2)],{type:"application/json;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=((project.title||"sitecraft-project").replace(/[^\\w\\u0600-\\u06FF-]+/g,"-"))+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast("فایل پروژه برای انتقال یا پشتیبان‌گیری دریافت شد")};
 $("#importProjectBtn").onclick=()=>$("#importProjectInput").click();
-$("#importProjectInput").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>5*1024*1024)throw new Error("حجم فایل بیشتر از ۵ مگابایت است.");const imported=JSON.parse(await file.text());if(!validImportedProject(imported))throw new Error("ساختار فایل پروژه معتبر نیست.");if(!confirm("پروژه فعلی با پروژه واردشده جایگزین شود؟ پیشنهاد می‌شود ابتدا از پروژه فعلی خروجی بگیری."))return;project=imported;currentPage=project.pages[0].id;selectedId=null;preview=false;$("#previewBtn").textContent="پیش‌نمایش سایت";localStorage.setItem("nikaSiteBuilderProject",JSON.stringify(project));renderAll();toast("پروژه با موفقیت وارد شد")}catch(err){alert("وارد کردن پروژه ناموفق بود: "+(err.message||"فایل قابل خواندن نیست."))}finally{e.target.value=""}});
+function importHTMLProject(html,fileName){
+ const doc=new DOMParser().parseFromString(html,"text/html");
+ const blocks=[];
+ const colorFrom=(el,key,fallback)=>{const v=el.style?.[key];return v&&/^#[0-9a-f]{3,8}$/i.test(v.trim())?v.trim():fallback};
+ const alignFrom=el=>["left","center","right"].includes(el.style?.textAlign)?el.style.textAlign:"right";
+ const add=(type,el,extra={})=>blocks.push({id:uid(),type,bg:colorFrom(el,"backgroundColor","#ffffff"),color:colorFrom(el,"color","#263248"),align:alignFrom(el),...extra});
+ function walk(el){
+  if(!el||!el.tagName)return;
+  const tag=el.tagName.toLowerCase();
+  if(/^h[1-6]$/.test(tag)){add("heading",el,{text:el.textContent.trim(),size:parseInt(el.style.fontSize)||({h1:34,h2:30,h3:24,h4:20,h5:18,h6:16}[tag])});return}
+  if(tag==="p"){add("text",el,{text:el.textContent.trim(),size:parseInt(el.style.fontSize)||16});return}
+  if(tag==="img"){const src=el.getAttribute("src")||"";if(src)add("image",el,{url:src,alt:el.getAttribute("alt")||"",width:parseInt(el.style.maxWidth||el.style.width)||70});return}
+  if(tag==="a"||tag==="button"){
+   const text=el.textContent.trim();if(!text)return;
+   const url=tag==="a"?(el.getAttribute("href")||"#"):"#";
+   add(tag==="a"&&el.closest("p")?"text":"button",el,tag==="a"&&el.closest("p")?{text}:{buttonText:text,action:"url",url,buttonBg:colorFrom(el,"backgroundColor","#5b7cfa"),buttonColor:colorFrom(el,"color","#ffffff")});return;
+  }
+  if(["script","style","noscript","svg","iframe","object","embed"].includes(tag))return;
+  Array.from(el.children||[]).forEach(walk);
+ }
+ Array.from(doc.body.children).forEach(walk);
+ if(!blocks.length)throw new Error("از این فایل HTML بخش قابل‌واردکردنی پیدا نشد. مطمئن شو فایل شامل عنوان، متن، لینک یا تصویر است.");
+ return {title:(doc.title||fileName.replace(/\\.(html?|HTML?)$/,"")||"پروژه واردشده").slice(0,120),pages:[{id:"home",name:"صفحه اصلی",blocks:blocks.slice(0,2000)}]};
+}
+$("#importProjectInput").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;try{
+ if(file.size>5*1024*1024)throw new Error("حجم فایل بیشتر از ۵ مگابایت است.");
+ const textContent=await file.text();
+ let imported;
+ if(/\\.html?$/i.test(file.name)){
+  imported=importHTMLProject(textContent,file.name);
+ }else{
+  try{imported=JSON.parse(textContent)}catch{throw new Error("این فایل JSON معتبر نیست. برای واردکردن HTML، فایل با پسوند .html یا .htm انتخاب کن.")}
+  if(!validImportedProject(imported))throw new Error("ساختار فایل پروژه معتبر نیست.");
+ }
+ if(!confirm("پروژه فعلی با پروژه واردشده جایگزین شود؟ پیشنهاد می‌شود ابتدا از پروژه فعلی خروجی بگیری."))return;
+ project=imported;currentPage=project.pages[0].id;selectedId=null;preview=false;$("#previewBtn").textContent="پیش‌نمایش سایت";localStorage.setItem("nikaSiteBuilderProject",JSON.stringify(project));renderAll();toast("پروژه با موفقیت وارد شد")
+ }catch(err){alert("وارد کردن پروژه ناموفق بود: "+(err.message||"فایل قابل خواندن نیست."))}finally{e.target.value=""}});
 function generatedHTML(){
  const pageFiles=project.pages.map(p=>{
   const sections=p.blocks.map(b=>{

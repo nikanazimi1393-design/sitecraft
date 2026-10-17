@@ -12,7 +12,7 @@
 <body>
 <header class="topbar">
  <div class="brand"><div class="logo">N</div><div>سایت‌ساز نیکا<div class="sub">طراحی سایت بدون نوشتن کد</div></div></div>
- <div class="actions"><button class="ghost" id="previewBtn">پیش‌نمایش سایت</button><button id="saveBtn">ذخیره پروژه</button><button class="primary" id="finishBtn">پایان کار و دریافت HTML</button></div>
+ <div class="actions"><button class="ghost" id="previewBtn">پیش‌نمایش سایت</button><button id="saveBtn">ذخیره پروژه</button><button id="exportProjectBtn">خروجی گرفتن از پروژه</button><button id="importProjectBtn">وارد کردن پروژه</button><input id="importProjectInput" type="file" accept=".json,application/json" hidden><button class="primary" id="finishBtn">پایان کار و دریافت HTML</button></div>
 </header>
 <div class="layout">
  <aside class="sidebar">
@@ -109,7 +109,14 @@ document.addEventListener("click",e=>{
 function moveBlock(id,dir){let a=page().blocks,i=a.findIndex(b=>b.id===id),j=i+dir;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];renderCanvas()}
 $("#addPageBtn").onclick=()=>{const name=prompt("نام صفحه جدید را وارد کن:","صفحه جدید");if(!name||!name.trim())return;const p={id:"p"+uid(),name:name.trim(),blocks:[]};project.pages.push(p);currentPage=p.id;selectedId=null;renderAll();toast("صفحه جدید ساخته شد")};
 $("#saveBtn").onclick=()=>{try{localStorage.setItem("nikaSiteBuilderProject",JSON.stringify(project));toast("پروژه در همین مرورگر ذخیره شد")}catch(e){toast("ذخیره خودکار در این مرورگر در دسترس نیست")}};
-function loadProject(){try{const x=localStorage.getItem("nikaSiteBuilderProject");if(x){const p=JSON.parse(x);if(p.pages?.length)project=p}}catch(e){}}
+function validImportedProject(p){
+ if(!p||typeof p!=="object"||!Array.isArray(p.pages)||p.pages.length<1||p.pages.length>100)return false;
+ return p.pages.every(pg=>pg&&typeof pg.id==="string"&&typeof pg.name==="string"&&Array.isArray(pg.blocks)&&pg.blocks.length<=2000&&pg.blocks.every(b=>b&&typeof b==="object"&&typeof b.type==="string"&&typeof b.id==="string"));
+}
+function loadProject(){try{const x=localStorage.getItem("nikaSiteBuilderProject");if(x){const p=JSON.parse(x);if(validImportedProject(p))project=p}}catch(e){}}
+$("#exportProjectBtn").onclick=()=>{const blob=new Blob([JSON.stringify(project,null,2)],{type:"application/json;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=((project.title||"sitecraft-project").replace(/[^\\w\\u0600-\\u06FF-]+/g,"-"))+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast("فایل پروژه برای انتقال یا پشتیبان‌گیری دریافت شد")};
+$("#importProjectBtn").onclick=()=>$("#importProjectInput").click();
+$("#importProjectInput").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>5*1024*1024)throw new Error("حجم فایل بیشتر از ۵ مگابایت است.");const imported=JSON.parse(await file.text());if(!validImportedProject(imported))throw new Error("ساختار فایل پروژه معتبر نیست.");if(!confirm("پروژه فعلی با پروژه واردشده جایگزین شود؟ پیشنهاد می‌شود ابتدا از پروژه فعلی خروجی بگیری."))return;project=imported;currentPage=project.pages[0].id;selectedId=null;preview=false;$("#previewBtn").textContent="پیش‌نمایش سایت";localStorage.setItem("nikaSiteBuilderProject",JSON.stringify(project));renderAll();toast("پروژه با موفقیت وارد شد")}catch(err){alert("وارد کردن پروژه ناموفق بود: "+(err.message||"فایل قابل خواندن نیست."))}finally{e.target.value=""}});
 function generatedHTML(){
  const pageFiles=project.pages.map(p=>{
   const sections=p.blocks.map(b=>{
